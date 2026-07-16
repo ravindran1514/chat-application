@@ -11,7 +11,7 @@ export function EmptyState() {
       </div>
       <h2 className="text-2xl font-black tracking-normal">Start a chat</h2>
       <p className="mt-2 max-w-64 text-sm leading-6 text-slate-600 dark:text-slate-300">
-        Create a room or join one with a code to chat from two phones.
+        Create a room or join one with a code.
       </p>
       <Link
         href="/new"

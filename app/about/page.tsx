@@ -12,13 +12,13 @@ const items = [
   },
   {
     icon: Database,
-    title: "Firebase realtime",
-    detail: "Chats and messages sync through Firestore so two phones can talk live."
+    title: "Realtime updates",
+    detail: "Fresh items sync through Firestore across signed-in devices."
   },
   {
     icon: ShieldCheck,
     title: "Anonymous sign-in",
-    detail: "Each phone connects with Firebase Auth and joins rooms with shareable codes."
+    detail: "Devices connect with Firebase Auth for a lightweight account-free experience."
   },
   {
     icon: PackageCheck,
@@ -30,13 +30,13 @@ const items = [
 export default function AboutPage() {
   return (
     <AppShell>
-      <TopBar title="About" subtitle="Firebase Chat 1.0.0" backHref="/settings" />
+      <TopBar title="About" subtitle="Daily Brief 1.0.0" backHref="/settings" />
 
       <section className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-4">
         <div className="glass rounded-3xl p-5">
-          <h1 className="text-3xl font-black tracking-normal">Firebase Chat</h1>
+          <h1 className="text-3xl font-black tracking-normal">Daily Brief</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            A lightweight mobile-first realtime chat app for Firebase and Capacitor Android.
+            A lightweight mobile-first daily updates app for Firebase and Capacitor Android.
           </p>
         </div>
 

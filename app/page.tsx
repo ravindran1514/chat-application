@@ -1,87 +1,112 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
-import { MessageCirclePlus, Search, Settings } from "lucide-react";
-import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { BriefcaseBusiness, CloudSun, Newspaper, TrendingUp } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ChatListItem } from "@/components/chat-list-item";
-import { EmptyState } from "@/components/empty-state";
-import { TopBar } from "@/components/top-bar";
-import { useChatStore } from "@/store/chat-store";
 
-export default function HomePage() {
-  const chats = useChatStore((state) => state.chats);
-  const hasHydrated = useChatStore((state) => state.hasHydrated);
-  const isLoading = useChatStore((state) => state.isLoading);
-  const error = useChatStore((state) => state.error);
-  const [query, setQuery] = useState("");
+const briefs = [
+  {
+    title: "Morning traffic eases near the east corridor",
+    tag: "City",
+    copy: "Signal timing updates are expected to reduce peak-hour wait times through the week."
+  },
+  {
+    title: "Weekend food street adds new evening stalls",
+    tag: "Local",
+    copy: "Small vendors are preparing late-night counters with tea, snacks, and handmade desserts."
+  },
+  {
+    title: "Independent artists announce a pop-up show",
+    tag: "Culture",
+    copy: "A compact gallery event will feature sketchbooks, prints, and live acoustic sets."
+  }
+];
 
-  const filteredChats = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return chats;
-    }
-
-    return chats.filter((chat) => chat.name.toLowerCase().includes(normalizedQuery));
-  }, [chats, query]);
+export default function CoverPage() {
+  const today = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }).format(new Date());
 
   return (
     <AppShell>
-      <TopBar
-        title="Chats"
-        subtitle={`${chats.length} online ${chats.length === 1 ? "room" : "rooms"}`}
-        actions={
-          <Link
-            href="/settings"
-            aria-label="Open settings"
-            className="grid h-10 w-10 place-items-center rounded-full text-slate-700 transition active:scale-95 dark:text-slate-200"
-          >
-            <Settings size={21} />
+      <section className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#eef4ef] px-4 py-5 text-slate-950 dark:bg-[#071013] dark:text-slate-50">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          className="mx-auto flex w-full max-w-md flex-1 flex-col"
+        >
+          <header className="safe-top">
+            <div className="flex items-center justify-between border-b-2 border-slate-950 pb-3 dark:border-white">
+              <div className="flex items-center gap-2">
+                <Newspaper size={24} />
+                <div>
+                  <h1 className="text-2xl font-black leading-none tracking-normal">Daily Brief</h1>
+                  <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    Local updates
+                  </p>
+                </div>
+              </div>
+              <div className="text-right text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p>{today}</p>
+                <p>Edition 08</p>
+              </div>
+            </div>
+          </header>
+
+          <Link href="/chats" aria-label="Read featured story" className="mt-4 block">
+            <motion.article
+              whileTap={{ scale: 0.985 }}
+              className="rounded-[1.7rem] border-2 border-slate-950 bg-[#fbfaf4] p-5 shadow-[8px_8px_0_rgba(15,23,42,0.22)] dark:border-white dark:bg-slate-900 dark:shadow-[8px_8px_0_rgba(255,255,255,0.12)]"
+            >
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-700 dark:text-emerald-300">Featured</p>
+              <h2 className="mt-3 text-4xl font-black leading-[0.95] tracking-normal">
+                Small city moments draw bigger weekend attention.
+              </h2>
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                <div className="col-span-2 border-t-2 border-slate-950 pt-3 dark:border-white">
+                  <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
+                    A round-up of quiet places, evening plans, and personal notes from around town.
+                  </p>
+                </div>
+                <div className="grid place-items-center rounded-2xl bg-emerald-700 p-4 text-white">
+                  <CloudSun size={34} />
+                  <span className="mt-2 text-xs font-black">29°C</span>
+                </div>
+              </div>
+            </motion.article>
           </Link>
-        }
-      />
 
-      <section className="px-4 pb-3">
-        <label className="glass flex items-center gap-3 rounded-2xl px-4 py-3">
-          <Search size={19} className="shrink-0 text-slate-500" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search chats"
-            className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-slate-500 dark:placeholder:text-slate-400"
-          />
-        </label>
-      </section>
+          <section className="mt-5 grid grid-cols-2 gap-3">
+            <article className="rounded-2xl bg-white/75 p-4 shadow-sm dark:bg-slate-900/70">
+              <TrendingUp size={20} className="text-emerald-700 dark:text-emerald-300" />
+              <p className="mt-4 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Markets</p>
+              <h3 className="mt-1 text-lg font-black leading-tight">Green close for local indexes</h3>
+            </article>
+            <article className="rounded-2xl bg-white/75 p-4 shadow-sm dark:bg-slate-900/70">
+              <BriefcaseBusiness size={20} className="text-cyan-700 dark:text-cyan-300" />
+              <p className="mt-4 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Work</p>
+              <h3 className="mt-1 text-lg font-black leading-tight">Hybrid offices extend summer hours</h3>
+            </article>
+          </section>
 
-      {!hasHydrated ? (
-        <div className="flex flex-1 items-center justify-center text-sm font-bold text-slate-500">Loading app...</div>
-      ) : error ? (
-        <div className="flex flex-1 items-center justify-center px-6 text-center text-sm font-bold text-rose-600">{error}</div>
-      ) : isLoading ? (
-        <div className="flex flex-1 items-center justify-center text-sm font-bold text-slate-500">Connecting to Firebase...</div>
-      ) : chats.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <section className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-28 pt-1">
-          <AnimatePresence initial={false}>
-            {filteredChats.map((chat) => (
-              <ChatListItem key={chat.id} chat={chat} />
+          <section className="mt-5 space-y-3 pb-5">
+            {briefs.map((item) => (
+              <article key={item.title} className="rounded-2xl border border-slate-950/10 bg-white/70 p-4 dark:border-white/10 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{item.tag}</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                </div>
+                <h3 className="mt-2 text-base font-black leading-tight">{item.title}</h3>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300">{item.copy}</p>
+              </article>
             ))}
-          </AnimatePresence>
-          {filteredChats.length === 0 ? (
-            <p className="pt-12 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">No chats match your search.</p>
-          ) : null}
-        </section>
-      )}
-
-      <Link
-        href="/new"
-        aria-label="Create new chat"
-        className="fixed bottom-6 right-[max(1.25rem,calc((100vw-28rem)/2+1.25rem))] z-30 grid h-16 w-16 place-items-center rounded-full bg-emerald-600 text-white shadow-glow transition active:scale-95"
-      >
-        <MessageCirclePlus size={28} />
-      </Link>
+          </section>
+        </motion.div>
+      </section>
     </AppShell>
   );
 }

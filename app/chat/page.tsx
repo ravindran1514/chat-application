@@ -183,7 +183,7 @@ function ChatScreen() {
   if (hasHydrated && !chat) {
     return (
       <AppShell>
-        <TopBar title="Chat not found" backHref="/" />
+        <TopBar title="Chat not found" backHref="/chats" />
         <div className="flex flex-1 items-center justify-center px-8 text-center text-sm font-semibold text-slate-500">
           This Firebase room is not available for this device.
         </div>
@@ -194,7 +194,7 @@ function ChatScreen() {
   return (
     <AppShell>
       <TopBar
-        backHref="/"
+        backHref="/chats"
         title={
           <div className="flex min-w-0 items-center gap-2">
             {chat ? <Avatar color={chat.color} initials={chat.avatarInitials} size="sm" /> : null}
@@ -314,7 +314,7 @@ function ChatScreen() {
         onConfirm={() => {
           if (chat) {
             void deleteChat(chat.id);
-            router.replace("/");
+            router.replace("/chats");
           }
         }}
       />

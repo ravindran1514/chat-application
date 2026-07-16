@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Firebase Chat",
-  description: "A fast realtime Firebase chat app for Android."
+  title: "Daily Brief",
+  description: "Local news and daily updates."
 };
 
 export const viewport: Viewport = {

@@ -26,7 +26,7 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <TopBar title="Settings" subtitle="Local preferences" backHref="/" />
+      <TopBar title="Settings" subtitle="Local preferences" backHref="/chats" />
 
       <section className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-3">
         <form

@@ -64,7 +64,7 @@ export default function NewChatPage() {
 
   return (
     <AppShell>
-      <TopBar title="Online chat" subtitle="Create or join a Firebase room" backHref="/" />
+      <TopBar title="Online chat" subtitle="Create or join a Firebase room" backHref="/chats" />
 
       <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-200/70 p-1 dark:bg-slate-950/50">
