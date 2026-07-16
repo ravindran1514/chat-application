@@ -22,6 +22,10 @@ export interface Message {
   senderId: string;
   senderName: string;
   text: string;
+  imageUrl?: string;
+  imageName?: string;
+  imageType?: string;
+  imageSize?: number;
   createdAt: number;
   updatedAt?: number;
   edited: boolean;

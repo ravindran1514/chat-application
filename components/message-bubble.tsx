@@ -49,6 +49,17 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
         }
       >
         {!isOwn ? <p className="mb-1 text-xs font-black text-emerald-600 dark:text-emerald-300">{message.senderName}</p> : null}
+        {message.imageUrl ? (
+          <a href={message.imageUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={message.imageUrl}
+              alt={message.imageName || "Shared image"}
+              className="max-h-72 w-full min-w-48 object-cover"
+              loading="lazy"
+            />
+          </a>
+        ) : null}
         {editing ? (
           <form
             onSubmit={(event) => {
@@ -67,9 +78,14 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
               <Check size={16} />
             </button>
           </form>
-        ) : (
+        ) : message.text ? (
           <p className="whitespace-pre-wrap break-words text-[15px] font-medium leading-6">{message.text}</p>
-        )}
+        ) : null}
+        {!message.text && message.imageUrl ? (
+          <p className={isOwn ? "mt-2 text-xs font-bold text-white/75" : "mt-2 text-xs font-bold text-slate-500 dark:text-slate-400"}>
+            {message.imageName || "Photo"}
+          </p>
+        ) : null}
         <div className={isOwn ? "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-white/75" : "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400"}>
           {message.edited ? <span>edited</span> : null}
           <time>{formatTime(message.updatedAt ?? message.createdAt)}</time>
@@ -78,14 +94,16 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
 
       {menuOpen && !editing && isOwn ? (
         <div className="absolute bottom-full right-0 z-10 mb-2 flex overflow-hidden rounded-full border border-white/60 bg-white/95 p-1 shadow-xl shadow-slate-950/15 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
-          <button
-            type="button"
-            aria-label="Edit message"
-            onClick={() => setEditing(true)}
-            className="grid h-10 w-10 place-items-center rounded-full text-slate-700 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            <Pencil size={17} />
-          </button>
+          {message.text ? (
+            <button
+              type="button"
+              aria-label="Edit message"
+              onClick={() => setEditing(true)}
+              className="grid h-10 w-10 place-items-center rounded-full text-slate-700 transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+            >
+              <Pencil size={17} />
+            </button>
+          ) : null}
           <button
             type="button"
             aria-label="Delete message"

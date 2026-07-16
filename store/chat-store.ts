@@ -11,6 +11,7 @@ import { createId, getInitials } from "@/lib/utils";
 import type { Chat, Message, Settings, ThemeMode, UserProfile } from "@/types/chat";
 
 const PROFILE_COLORS = ["#16a34a", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#2563eb"];
+const MAX_FIRESTORE_IMAGE_BYTES = 720 * 1024;
 
 interface ChatState {
   chats: Chat[];
@@ -34,6 +35,7 @@ interface ChatState {
   markChatRead: (chatId: string) => void;
   subscribeMessages: (chatId: string) => Unsubscribe;
   sendMessage: (chatId: string, text: string) => Promise<void>;
+  sendImageMessage: (chatId: string, file: File) => Promise<void>;
   editMessage: (chatId: string, messageId: string, text: string) => Promise<void>;
   deleteMessage: (chatId: string, messageId: string) => Promise<void>;
   setTheme: (theme: ThemeMode) => void;
@@ -90,10 +92,65 @@ function mapMessageDoc(id: string, chatId: string, data: Record<string, unknown>
     senderId: String(data.senderId ?? ""),
     senderName: String(data.senderName ?? "Someone"),
     text: String(data.text ?? ""),
+    imageUrl: data.imageUrl ? String(data.imageUrl) : undefined,
+    imageName: data.imageName ? String(data.imageName) : undefined,
+    imageType: data.imageType ? String(data.imageType) : undefined,
+    imageSize: data.imageSize ? Number(data.imageSize) : undefined,
     createdAt: Number(data.createdAt ?? Date.now()),
     updatedAt: data.updatedAt ? Number(data.updatedAt) : undefined,
     edited: Boolean(data.edited)
   };
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Unable to read image."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function compressImageToDataUrl(file: File): Promise<{ dataUrl: string; size: number; type: string }> {
+  const image = await loadImage(file);
+  const maxSide = 960;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Image compression is not available on this device.");
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  const qualities = [0.72, 0.62, 0.52, 0.42];
+  for (const quality of qualities) {
+    const dataUrl = canvas.toDataURL("image/jpeg", quality);
+    const size = Math.ceil((dataUrl.length * 3) / 4);
+
+    if (size <= MAX_FIRESTORE_IMAGE_BYTES) {
+      return {
+        dataUrl,
+        size,
+        type: "image/jpeg"
+      };
+    }
+  }
+
+  throw new Error("Image is too large. Choose a smaller image.");
 }
 
 function sortChats(chats: Chat[]): Chat[] {
@@ -344,6 +401,43 @@ export const useChatStore = create<ChatState>()(
         });
         batch.update(doc(db, "chats", chatId), {
           lastMessageText: trimmedText,
+          lastMessageAt: now,
+          lastSenderId: userId,
+          updatedAt: now
+        });
+
+        await batch.commit();
+      },
+      sendImageMessage: async (chatId, file) => {
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Choose an image file.");
+        }
+
+        if (file.size > 8 * 1024 * 1024) {
+          throw new Error("Image must be under 8 MB.");
+        }
+
+        const { userId } = requireOnline(get());
+        const now = Date.now();
+        const db = getFirebaseDb();
+        const messageId = createId("msg");
+        const profile = get().profile;
+        const compressedImage = await compressImageToDataUrl(file);
+        const batch = writeBatch(db);
+
+        batch.set(doc(db, "chats", chatId, "messages", messageId), {
+          senderId: userId,
+          senderName: profile.displayName,
+          text: "",
+          imageUrl: compressedImage.dataUrl,
+          imageName: file.name,
+          imageType: compressedImage.type,
+          imageSize: compressedImage.size,
+          createdAt: now,
+          edited: false
+        });
+        batch.update(doc(db, "chats", chatId), {
+          lastMessageText: "Photo",
           lastMessageAt: now,
           lastSenderId: userId,
           updatedAt: now

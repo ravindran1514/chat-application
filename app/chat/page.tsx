@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { Copy, Pin, Send, Trash2 } from "lucide-react";
+import { Copy, ImagePlus, Pin, Send, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -19,6 +19,7 @@ function ChatScreen() {
   const chats = useChatStore((state) => state.chats);
   const allMessages = useChatStore((state) => state.messages);
   const sendMessage = useChatStore((state) => state.sendMessage);
+  const sendImageMessage = useChatStore((state) => state.sendImageMessage);
   const deleteChat = useChatStore((state) => state.deleteChat);
   const togglePinChat = useChatStore((state) => state.togglePinChat);
   const markChatRead = useChatStore((state) => state.markChatRead);
@@ -27,8 +28,11 @@ function ChatScreen() {
   const userId = useChatStore((state) => state.userId);
   const error = useChatStore((state) => state.error);
   const [draft, setDraft] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chat = chats.find((item) => item.id === chatId);
 
   const messages = useMemo(() => getMessagesForChat(allMessages, chatId), [allMessages, chatId]);
@@ -58,6 +62,26 @@ function ChatScreen() {
     }
     void sendMessage(chat.id, draft);
     setDraft("");
+  };
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !chat) {
+      return;
+    }
+
+    setUploadingImage(true);
+    setUploadError("");
+
+    try {
+      await sendImageMessage(chat.id, file);
+    } catch (imageError) {
+      setUploadError(imageError instanceof Error ? imageError.message : "Unable to upload image.");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   if (hasHydrated && !chat) {
@@ -124,8 +148,11 @@ function ChatScreen() {
           </AnimatePresence>
           {messages.length === 0 ? (
             <div className="pt-20 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
-              {error || "Say something to begin."}
+              {uploadError || error || "Say something to begin."}
             </div>
+          ) : null}
+          {uploadError && messages.length > 0 ? (
+            <p className="text-center text-sm font-bold text-rose-600">{uploadError}</p>
           ) : null}
           <div ref={endRef} />
         </div>
@@ -133,17 +160,27 @@ function ChatScreen() {
 
       <form onSubmit={handleSend} className="safe-bottom shrink-0 px-4 pt-2">
         <div className="glass flex items-end gap-2 rounded-[1.7rem] p-2">
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+          <button
+            type="button"
+            aria-label="Upload image"
+            disabled={!chat || uploadingImage}
+            onClick={() => fileInputRef.current?.click()}
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/80 text-slate-700 transition active:scale-95 disabled:opacity-45 dark:bg-slate-950/60 dark:text-slate-200"
+          >
+            <ImagePlus size={20} />
+          </button>
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Message"
+            placeholder={uploadingImage ? "Compressing image..." : "Message"}
             rows={1}
             className="max-h-32 min-h-12 min-w-0 flex-1 resize-none rounded-[1.35rem] bg-white/80 px-4 py-3 text-[15px] font-semibold leading-6 outline-none placeholder:text-slate-500 dark:bg-slate-950/60 dark:placeholder:text-slate-400"
           />
           <button
             type="submit"
             aria-label="Send message"
-            disabled={!draft.trim() || !chat}
+            disabled={!draft.trim() || !chat || uploadingImage}
             className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-emerald-600 text-white shadow-glow transition active:scale-95 disabled:opacity-45"
           >
             <Send size={20} />
