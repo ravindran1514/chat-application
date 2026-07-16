@@ -13,6 +13,41 @@ export function createId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${randomPart.slice(0, 12)}`;
 }
 
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the legacy path for mobile browsers and local-network HTTP.
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "true");
+  textArea.style.position = "fixed";
+  textArea.style.top = "-1000px";
+  textArea.style.left = "-1000px";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  textArea.setSelectionRange(0, text.length);
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
 export function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {

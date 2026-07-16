@@ -19,12 +19,12 @@ export function AppShell({ children }: AppShellProps) {
   }, [bootFirebase]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden text-slate-950 dark:text-slate-50">
+    <main className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden text-slate-950 dark:text-slate-50">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: "easeOut" }}
-        className="flex min-h-dvh flex-col"
+        className="flex h-full min-h-0 flex-col overflow-hidden"
       >
         {children}
       </motion.div>

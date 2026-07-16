@@ -1,0 +1,75 @@
+[debug] [2026-07-16T11:22:00.427Z] ----------------------------------------------------------------------
+[debug] [2026-07-16T11:22:00.430Z] Command:       /usr/bin/node /opt/lampp/htdocs/chat application/node_modules/.bin/firebase deploy --only firestore:rules --project chat-f7ef9
+[debug] [2026-07-16T11:22:00.430Z] CLI Version:   15.24.0
+[debug] [2026-07-16T11:22:00.431Z] Platform:      linux
+[debug] [2026-07-16T11:22:00.431Z] Node Version:  v25.9.0
+[debug] [2026-07-16T11:22:00.431Z] Detected Agent: codex_cli
+[debug] [2026-07-16T11:22:00.431Z] Time:          Thu Jul 16 2026 16:52:00 GMT+0530 (India Standard Time)
+[debug] [2026-07-16T11:22:00.431Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-07-16T11:22:00.448Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-07-16T11:22:03.064Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-07-16T11:22:03.066Z] SystemError [ERR_SYSTEM_ERROR]: A system error occurred: uv_interface_addresses returned Unknown system error 1 (Unknown system error 1)
+    at networkInterfaces (node:os:218:16)
+    at isGoogleComputeEngineMACAddress (/opt/lampp/htdocs/chat application/node_modules/gcp-metadata/build/src/gcp-residency.js:86:51)
+    at isGoogleComputeEngine (/opt/lampp/htdocs/chat application/node_modules/gcp-metadata/build/src/gcp-residency.js:104:44)
+    at detectGCPResidency (/opt/lampp/htdocs/chat application/node_modules/gcp-metadata/build/src/gcp-residency.js:112:41)
+    at setGCPResidency (/opt/lampp/htdocs/chat application/node_modules/gcp-metadata/build/src/index.js:393:97)
+    at Object.getGCPResidency (/opt/lampp/htdocs/chat application/node_modules/gcp-metadata/build/src/index.js:381:9)
+    at GoogleAuth._checkIsGCE (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:300:29)
+    at GoogleAuth.getApplicationDefaultAsync (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:283:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?
+[debug] [2026-07-16T11:22:03.069Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): Error: getaddrinfo EAI_AGAIN firebase-public.firebaseio.com
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-07-16T11:22:03.077Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2026-07-16T11:22:03.347Z] Error: ENOENT: no such file or directory, mkdir '/home/pixel-php/.config/configstore'
+    at Object.mkdirSync (node:fs:1334:26)
+    at module.exports.sync (/opt/lampp/htdocs/chat application/node_modules/make-dir/index.js:114:6)
+    at set all (/opt/lampp/htdocs/chat application/node_modules/configstore/index.js:59:12)
+    at Configstore.delete (/opt/lampp/htdocs/chat application/node_modules/configstore/index.js:101:12)
+    at process.<anonymous> (/opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/bin/cli.js:95:45)
+    at process.emit (node:events:521:24)
+    at process.exit (node:internal/process/per_thread:236:15)
+    at Timeout._onTimeout (/opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/errorOut.js:20:17)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-07-16T11:22:20.473Z] ----------------------------------------------------------------------
+[debug] [2026-07-16T11:22:20.476Z] Command:       /usr/bin/node /opt/lampp/htdocs/chat application/node_modules/.bin/firebase deploy --only firestore:rules --project chat-f7ef9
+[debug] [2026-07-16T11:22:20.477Z] CLI Version:   15.24.0
+[debug] [2026-07-16T11:22:20.477Z] Platform:      linux
+[debug] [2026-07-16T11:22:20.477Z] Node Version:  v25.9.0
+[debug] [2026-07-16T11:22:20.478Z] Detected Agent: codex_cli
+[debug] [2026-07-16T11:22:20.478Z] Time:          Thu Jul 16 2026 16:52:20 GMT+0530 (India Standard Time)
+[debug] [2026-07-16T11:22:20.478Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-07-16T11:22:20.498Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-07-16T11:22:21.828Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-07-16T11:22:21.892Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/opt/lampp/htdocs/chat application/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/requireAuth.js:38:19)
+    at async requireAuth (/opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/requireAuth.js:100:20)
+    at async requirePermissions (/opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/requirePermissions.js:17:5)
+    at async /opt/lampp/htdocs/chat application/node_modules/firebase-tools/lib/command.js:271:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?
+[debug] [2026-07-16T11:22:32.849Z] ----------------------------------------------------------------------
+[debug] [2026-07-16T11:22:32.853Z] Command:       /usr/bin/node /opt/lampp/htdocs/chat application/node_modules/.bin/firebase login --no-localhost
+[debug] [2026-07-16T11:22:32.854Z] CLI Version:   15.24.0
+[debug] [2026-07-16T11:22:32.855Z] Platform:      linux
+[debug] [2026-07-16T11:22:32.855Z] Node Version:  v25.9.0
+[debug] [2026-07-16T11:22:32.855Z] Detected Agent: codex_cli
+[debug] [2026-07-16T11:22:32.855Z] Time:          Thu Jul 16 2026 16:52:32 GMT+0530 (India Standard Time)
+[debug] [2026-07-16T11:22:32.855Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-07-16T11:22:32.873Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[error] 
+[error] Error: Cannot run login in non-interactive mode. See login:ci to generate a token for use in non-interactive environments.

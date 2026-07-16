@@ -15,7 +15,7 @@ interface TopBarProps {
 
 export function TopBar({ title, subtitle, backHref, actions, className }: TopBarProps) {
   return (
-    <header className={cn("safe-top sticky top-0 z-20 px-4 pb-3", className)}>
+    <header className={cn("safe-top sticky top-0 z-20 shrink-0 px-4 pb-3", className)}>
       <div className="glass flex min-h-16 items-center gap-3 rounded-2xl px-3 py-2">
         {backHref ? (
           <Link

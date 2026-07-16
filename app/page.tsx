@@ -63,7 +63,7 @@ export default function HomePage() {
       ) : chats.length === 0 ? (
         <EmptyState />
       ) : (
-        <section className="flex-1 space-y-3 overflow-y-auto px-4 pb-28 pt-1">
+        <section className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-28 pt-1">
           <AnimatePresence initial={false}>
             {filteredChats.map((chat) => (
               <ChatListItem key={chat.id} chat={chat} />

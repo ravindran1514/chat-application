@@ -9,6 +9,7 @@ import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { MessageBubble } from "@/components/message-bubble";
 import { TopBar } from "@/components/top-bar";
+import { copyToClipboard } from "@/lib/utils";
 import { getMessagesForChat, useChatStore } from "@/store/chat-store";
 
 function ChatScreen() {
@@ -87,7 +88,7 @@ function ChatScreen() {
               type="button"
               aria-label="Copy room code"
               disabled={!chat}
-              onClick={() => chat && void navigator.clipboard?.writeText(chat.roomCode)}
+              onClick={() => chat && void copyToClipboard(chat.roomCode)}
               className="grid h-10 w-10 place-items-center rounded-full text-slate-700 transition active:scale-95 disabled:opacity-40 dark:text-slate-200"
             >
               <Copy size={19} />
@@ -103,7 +104,7 @@ function ChatScreen() {
             </button>
             <button
               type="button"
-              aria-label="Delete chat"
+              aria-label="Delete chat for me"
               disabled={!chat}
               onClick={() => setConfirmOpen(true)}
               className="grid h-10 w-10 place-items-center rounded-full text-rose-600 transition active:scale-95 disabled:opacity-40"
@@ -114,7 +115,7 @@ function ChatScreen() {
         }
       />
 
-      <section className="flex-1 overflow-y-auto px-4 pb-4 pt-2">
+      <section className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-2">
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {messages.map((message) => (
@@ -130,7 +131,7 @@ function ChatScreen() {
         </div>
       </section>
 
-      <form onSubmit={handleSend} className="safe-bottom sticky bottom-0 px-4 pt-2">
+      <form onSubmit={handleSend} className="safe-bottom shrink-0 px-4 pt-2">
         <div className="glass flex items-end gap-2 rounded-[1.7rem] p-2">
           <textarea
             value={draft}
@@ -152,8 +153,8 @@ function ChatScreen() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete chat?"
-        description={chat ? `This removes ${chat.name} and all messages from this device.` : "This chat will be removed."}
+        title="Delete for you?"
+        description={chat ? `This removes ${chat.name} from your chat list. Others in the room can still chat, and you can join again with code ${chat.roomCode}.` : "This chat will be removed from your list."}
         confirmLabel="Delete"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {

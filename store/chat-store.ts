@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
+import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
 import type { Unsubscribe } from "firebase/firestore";
 import { createIndexedDbStorage } from "@/lib/idb-storage";
@@ -262,29 +262,20 @@ export const useChatStore = create<ChatState>()(
         });
       },
       deleteChat: async (chatId) => {
-        requireOnline(get());
+        const { userId } = requireOnline(get());
         const db = getFirebaseDb();
-        const chatSnapshot = await getDoc(doc(db, "chats", chatId));
+        const chatRef = doc(db, "chats", chatId);
+        const chatSnapshot = await getDoc(chatRef);
 
         if (!chatSnapshot.exists()) {
           return;
         }
 
-        const messagesSnapshot = await getDocs(collection(db, "chats", chatId, "messages"));
-        for (let index = 0; index < messagesSnapshot.docs.length; index += 450) {
-          const batch = writeBatch(db);
-          messagesSnapshot.docs.slice(index, index + 450).forEach((messageDoc) => batch.delete(messageDoc.ref));
-
-          if (index + 450 >= messagesSnapshot.docs.length) {
-            batch.delete(doc(db, "chats", chatId));
-          }
-
-          await batch.commit();
-        }
-
-        if (messagesSnapshot.empty) {
-          await deleteDoc(doc(db, "chats", chatId));
-        }
+        await updateDoc(chatRef, {
+          participantIds: arrayRemove(userId),
+          [`participantNames.${userId}`]: deleteField(),
+          updatedAt: Date.now()
+        });
 
         set((state) => ({
           chats: state.chats.filter((chat) => chat.id !== chatId),

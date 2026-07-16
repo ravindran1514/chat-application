@@ -9,7 +9,16 @@ import { TopBar } from "@/components/top-bar";
 import { cn, getInitials } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 
-const colors = ["#16a34a", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#2563eb", "#0f766e", "#be123c"];
+const colors = [
+  { name: "Emerald", value: "#16a34a" },
+  { name: "Cyan", value: "#0891b2" },
+  { name: "Violet", value: "#7c3aed" },
+  { name: "Rose", value: "#db2777" },
+  { name: "Orange", value: "#ea580c" },
+  { name: "Blue", value: "#2563eb" },
+  { name: "Teal", value: "#0f766e" },
+  { name: "Ruby", value: "#be123c" }
+];
 
 type Mode = "create" | "join";
 
@@ -22,9 +31,10 @@ export default function NewChatPage() {
   const [mode, setMode] = useState<Mode>("create");
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [color, setColor] = useState(colors[0]);
+  const [color, setColor] = useState(colors[0].value);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const selectedColor = colors.find((item) => item.value === color) ?? colors[0];
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -56,7 +66,7 @@ export default function NewChatPage() {
     <AppShell>
       <TopBar title="Online chat" subtitle="Create or join a Firebase room" backHref="/" />
 
-      <form onSubmit={handleSubmit} className="flex flex-1 flex-col px-4 pb-6 pt-6">
+      <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-6">
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-200/70 p-1 dark:bg-slate-950/50">
           <button
             type="button"
@@ -123,25 +133,38 @@ export default function NewChatPage() {
         </section>
 
         {mode === "create" ? (
-          <section className="mt-4">
-            <div className="mb-3 flex items-center gap-2 px-1 text-sm font-black text-slate-700 dark:text-slate-200">
-              <Palette size={18} />
-              Profile color
+          <section className="glass mt-4 rounded-3xl p-4">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/70 text-slate-700 shadow-sm dark:bg-slate-950/50 dark:text-slate-200">
+                <Palette size={19} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-black text-slate-800 dark:text-slate-100">Profile color</h2>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{selectedColor.name}</p>
+              </div>
+              <div
+                className="h-9 w-9 shrink-0 rounded-full shadow-lg shadow-slate-950/10 ring-4 ring-white/70 dark:ring-slate-950/50"
+                style={{ background: `linear-gradient(135deg, ${selectedColor.value}, ${selectedColor.value}aa)` }}
+                aria-hidden="true"
+              />
             </div>
-            <div className="grid grid-cols-4 gap-3">
+
+            <div className="flex gap-3 overflow-x-auto pb-1">
               {colors.map((item) => (
                 <button
-                  key={item}
+                  key={item.value}
                   type="button"
-                  aria-label={`Use profile color ${item}`}
-                  onClick={() => setColor(item)}
+                  aria-label={`Use ${item.name} profile color`}
+                  onClick={() => setColor(item.value)}
                   className={cn(
-                    "grid aspect-square place-items-center rounded-3xl border-2 transition active:scale-95",
-                    color === item ? "border-slate-950 dark:border-white" : "border-white/60 dark:border-white/10"
+                    "grid h-12 w-12 shrink-0 place-items-center rounded-full border transition active:scale-95",
+                    color === item.value
+                      ? "border-white shadow-lg shadow-slate-950/15 ring-2 ring-slate-950 ring-offset-2 ring-offset-white dark:ring-white dark:ring-offset-slate-900"
+                      : "border-white/70 shadow-sm shadow-slate-950/10 dark:border-white/10"
                   )}
-                  style={{ background: `linear-gradient(135deg, ${item}, ${item}aa)` }}
+                  style={{ background: `linear-gradient(135deg, ${item.value}, ${item.value}aa)` }}
                 >
-                  {color === item ? <Check className="text-white drop-shadow" size={24} /> : null}
+                  {color === item.value ? <Check className="text-white drop-shadow" size={19} /> : null}
                 </button>
               ))}
             </div>
@@ -151,7 +174,7 @@ export default function NewChatPage() {
         <button
           type="submit"
           disabled={saving || !isOnlineReady}
-          className="mt-auto rounded-full bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-glow transition active:scale-95 disabled:opacity-50"
+          className="mt-5 w-full rounded-full bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-glow transition active:scale-95 disabled:opacity-50"
         >
           {saving ? "Please wait..." : mode === "create" ? "Create room" : "Join room"}
         </button>

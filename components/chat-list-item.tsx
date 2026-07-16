@@ -4,9 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Copy, MoreVertical, Pin, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { ActionSheet } from "@/components/action-sheet";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { formatChatDate, truncateText } from "@/lib/utils";
+import { copyToClipboard, formatChatDate, truncateText } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 import type { Chat } from "@/types/chat";
 
@@ -22,6 +23,7 @@ export function ChatListItem({ chat }: ChatListItemProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(chat.name);
+  const [copyStatus, setCopyStatus] = useState("");
 
   const handleRename = async () => {
     const trimmed = name.trim();
@@ -74,49 +76,6 @@ export function ChatListItem({ chat }: ChatListItemProps) {
           </button>
         </div>
 
-        {menuOpen ? (
-          <div className="absolute right-3 top-14 z-10 w-44 rounded-2xl border border-white/60 bg-white/95 p-2 shadow-2xl shadow-slate-950/15 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
-            <button
-              type="button"
-              onClick={() => {
-                togglePinChat(chat.id);
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <Pin size={16} />
-              {chat.pinned ? "Unpin chat" : "Pin chat"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setRenaming(true)}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <Pencil size={16} />
-              Rename
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard?.writeText(chat.roomCode);
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <Copy size={16} />
-              Copy code
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(true)}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-950/30"
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
-          </div>
-        ) : null}
-
         {renaming ? (
           <form onSubmit={(event) => event.preventDefault()} className="mt-3 flex gap-2">
             <input
@@ -137,10 +96,49 @@ export function ChatListItem({ chat }: ChatListItemProps) {
         ) : null}
       </motion.article>
 
+      <ActionSheet
+        open={menuOpen}
+        title={chat.name}
+        subtitle={`Room ${chat.roomCode}`}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          {
+            label: chat.pinned ? "Unpin chat" : "Pin chat",
+            icon: Pin,
+            onSelect: () => togglePinChat(chat.id)
+          },
+          {
+            label: "Rename",
+            icon: Pencil,
+            onSelect: () => setRenaming(true)
+          },
+          {
+            label: copyStatus || "Copy room code",
+            icon: Copy,
+            keepOpen: true,
+            onSelect: () => {
+              void copyToClipboard(chat.roomCode).then((copied) => {
+                setCopyStatus(copied ? `Copied ${chat.roomCode}` : `Code: ${chat.roomCode}`);
+                window.setTimeout(() => {
+                  setCopyStatus("");
+                  setMenuOpen(false);
+                }, copied ? 900 : 1800);
+              });
+            }
+          },
+          {
+            label: "Delete for me",
+            icon: Trash2,
+            destructive: true,
+            onSelect: () => setConfirmOpen(true)
+          }
+        ]}
+      />
+
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete chat?"
-        description={`This removes ${chat.name} from Firebase for everyone in this room.`}
+        title="Delete for you?"
+        description={`This removes ${chat.name} from your chat list. Other joined users can still see it, and you can join again with room code ${chat.roomCode}.`}
         confirmLabel="Delete"
         onCancel={() => {
           setConfirmOpen(false);
