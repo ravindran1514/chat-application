@@ -1,0 +1,16 @@
+.env.local
+.env*.local
+.next/
+out/
+node_modules/
+tsconfig.tsbuildinfo
+
+.agents/
+.codex/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.DS_Store
