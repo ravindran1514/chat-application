@@ -26,6 +26,10 @@ export interface Message {
   imageName?: string;
   imageType?: string;
   imageSize?: number;
+  audioUrl?: string;
+  audioType?: string;
+  audioSize?: number;
+  audioDurationMs?: number;
   createdAt: number;
   updatedAt?: number;
   edited: boolean;

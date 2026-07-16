@@ -12,6 +12,7 @@ import type { Chat, Message, Settings, ThemeMode, UserProfile } from "@/types/ch
 
 const PROFILE_COLORS = ["#16a34a", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#2563eb"];
 const MAX_FIRESTORE_IMAGE_BYTES = 720 * 1024;
+const MAX_FIRESTORE_AUDIO_BYTES = 720 * 1024;
 
 interface ChatState {
   chats: Chat[];
@@ -36,6 +37,7 @@ interface ChatState {
   subscribeMessages: (chatId: string) => Unsubscribe;
   sendMessage: (chatId: string, text: string) => Promise<void>;
   sendImageMessage: (chatId: string, file: File) => Promise<void>;
+  sendVoiceMessage: (chatId: string, audioBlob: Blob, durationMs: number) => Promise<void>;
   editMessage: (chatId: string, messageId: string, text: string) => Promise<void>;
   deleteMessage: (chatId: string, messageId: string) => Promise<void>;
   setTheme: (theme: ThemeMode) => void;
@@ -96,10 +98,23 @@ function mapMessageDoc(id: string, chatId: string, data: Record<string, unknown>
     imageName: data.imageName ? String(data.imageName) : undefined,
     imageType: data.imageType ? String(data.imageType) : undefined,
     imageSize: data.imageSize ? Number(data.imageSize) : undefined,
+    audioUrl: data.audioUrl ? String(data.audioUrl) : undefined,
+    audioType: data.audioType ? String(data.audioType) : undefined,
+    audioSize: data.audioSize ? Number(data.audioSize) : undefined,
+    audioDurationMs: data.audioDurationMs ? Number(data.audioDurationMs) : undefined,
     createdAt: Number(data.createdAt ?? Date.now()),
     updatedAt: data.updatedAt ? Number(data.updatedAt) : undefined,
     edited: Boolean(data.edited)
   };
+}
+
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Unable to read voice message."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {
@@ -438,6 +453,49 @@ export const useChatStore = create<ChatState>()(
         });
         batch.update(doc(db, "chats", chatId), {
           lastMessageText: "Photo",
+          lastMessageAt: now,
+          lastSenderId: userId,
+          updatedAt: now
+        });
+
+        await batch.commit();
+      },
+      sendVoiceMessage: async (chatId, audioBlob, durationMs) => {
+        if (!audioBlob.type.startsWith("audio/")) {
+          throw new Error("Voice recording is not supported on this device.");
+        }
+
+        if (audioBlob.size > MAX_FIRESTORE_AUDIO_BYTES) {
+          throw new Error("Voice note is too long. Try a shorter recording.");
+        }
+
+        const { userId } = requireOnline(get());
+        const now = Date.now();
+        const db = getFirebaseDb();
+        const messageId = createId("msg");
+        const profile = get().profile;
+        const audioUrl = await readBlobAsDataUrl(audioBlob);
+        const estimatedSize = Math.ceil((audioUrl.length * 3) / 4);
+
+        if (estimatedSize > MAX_FIRESTORE_AUDIO_BYTES) {
+          throw new Error("Voice note is too long. Try a shorter recording.");
+        }
+
+        const batch = writeBatch(db);
+
+        batch.set(doc(db, "chats", chatId, "messages", messageId), {
+          senderId: userId,
+          senderName: profile.displayName,
+          text: "",
+          audioUrl,
+          audioType: audioBlob.type,
+          audioSize: estimatedSize,
+          audioDurationMs: durationMs,
+          createdAt: now,
+          edited: false
+        });
+        batch.update(doc(db, "chats", chatId), {
+          lastMessageText: "Voice message",
           lastMessageAt: now,
           lastSenderId: userId,
           updatedAt: now

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Pencil, Trash2 } from "lucide-react";
+import { Check, Mic, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useLongPress } from "@/hooks/use-long-press";
 import { formatTime } from "@/lib/utils";
@@ -85,6 +85,16 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
           <p className={isOwn ? "mt-2 text-xs font-bold text-white/75" : "mt-2 text-xs font-bold text-slate-500 dark:text-slate-400"}>
             {message.imageName || "Photo"}
           </p>
+        ) : null}
+        {message.audioUrl ? (
+          <div className="min-w-56">
+            <div className="mb-2 flex items-center gap-2 text-xs font-black">
+              <Mic size={14} />
+              Voice message
+              {message.audioDurationMs ? <span className="font-bold opacity-70">{Math.max(1, Math.round(message.audioDurationMs / 1000))}s</span> : null}
+            </div>
+            <audio src={message.audioUrl} controls preload="metadata" className="h-9 w-full max-w-64" />
+          </div>
         ) : null}
         <div className={isOwn ? "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-white/75" : "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400"}>
           {message.edited ? <span>edited</span> : null}

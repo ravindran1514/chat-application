@@ -7,7 +7,7 @@ A mobile-first realtime chat app built with Next.js 15, React, TypeScript, Tailw
 1. Ravi opens the app and sets his name in Settings.
 2. Ravi taps `+`, creates a room, and copies the room code from the chat header/menu.
 3. Ram opens the app on another phone, sets his name in Settings, taps `+`, chooses Join, and enters the same room code.
-4. Text and compressed image messages sync live through Firestore.
+4. Text, compressed image, and short voice messages sync live through Firestore.
 
 ## Firebase Setup
 
@@ -29,7 +29,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 Deploy or paste the included `firestore.rules` in Firebase Console.
 
-Image messages are compressed and stored in Firestore documents so the app can stay on the no-cost Spark plan without Firebase Storage. This is best for light image sharing, not large media storage.
+Image and voice messages are compressed or size-limited and stored in Firestore documents so the app can stay on the no-cost Spark plan without Firebase Storage. This is best for light media sharing, not large media storage.
 
 ## Development
 
