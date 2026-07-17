@@ -3,6 +3,7 @@ export type ThemeMode = "light" | "dark";
 export interface ParticipantPresence {
   name: string;
   lastSeenAt: number;
+  lastReadAt?: number;
 }
 
 export interface Chat {

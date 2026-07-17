@@ -11,7 +11,7 @@ import { MessageBubble } from "@/components/message-bubble";
 import { TopBar } from "@/components/top-bar";
 import { copyToClipboard } from "@/lib/utils";
 import { getMessagesForChat, useChatStore } from "@/store/chat-store";
-import type { Chat } from "@/types/chat";
+import type { Chat, Message } from "@/types/chat";
 
 const ONLINE_WINDOW_MS = 45000;
 
@@ -43,17 +43,7 @@ function formatLastSeen(timestamp?: number): string {
   }).format(timestamp);
 }
 
-function RoomMembersDialog({
-  chat,
-  currentUserId,
-  open,
-  onClose
-}: {
-  chat: Chat | undefined;
-  currentUserId: string | null;
-  open: boolean;
-  onClose: () => void;
-}) {
+function getActiveMembers(chat: Chat | undefined, currentUserId: string | null) {
   const rawMembers =
     chat?.participantIds.map((participantId) => {
       const presence = chat.participantPresence[participantId];
@@ -63,17 +53,13 @@ function RoomMembersDialog({
       return {
         id: participantId,
         name,
-        initials: name
-          .split(/\s+/)
-          .slice(0, 2)
-          .map((part) => part[0]?.toUpperCase() ?? "")
-          .join("") || "?",
         online,
         lastSeenAt: presence?.lastSeenAt ?? 0,
-        lastSeen: formatLastSeen(presence?.lastSeenAt)
+        lastReadAt: presence?.lastReadAt ?? 0
       };
     }) ?? [];
-  const members = Array.from(
+
+  return Array.from(
     rawMembers
       .sort((a, b) => {
         if (a.id === currentUserId) {
@@ -99,6 +85,42 @@ function RoomMembersDialog({
       }, new Map<string, (typeof rawMembers)[number]>())
       .values()
   );
+}
+
+function getMessageStatus(chat: Chat | undefined, currentUserId: string | null, message: Message): "sent" | "delivered" | "read" {
+  if (!chat || !currentUserId || message.senderId !== currentUserId) {
+    return "sent";
+  }
+
+  const readers = getActiveMembers(chat, currentUserId).filter((member) => member.id !== currentUserId);
+  if (readers.length === 0) {
+    return "sent";
+  }
+
+  return readers.some((member) => member.lastReadAt >= message.createdAt) ? "read" : "delivered";
+}
+
+function RoomMembersDialog({
+  chat,
+  currentUserId,
+  open,
+  onClose
+}: {
+  chat: Chat | undefined;
+  currentUserId: string | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const members = getActiveMembers(chat, currentUserId).map((member) => ({
+    ...member,
+    initials:
+      member.name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("") || "?",
+    lastSeen: formatLastSeen(member.lastSeenAt)
+  }));
   const onlineCount = members.filter((member) => member.online).length;
 
   return (
@@ -209,12 +231,19 @@ function ChatScreen() {
   const chat = chats.find((item) => item.id === chatId);
 
   const messages = useMemo(() => getMessagesForChat(allMessages, chatId), [allMessages, chatId]);
+  const latestMessageId = messages.at(-1)?.id ?? "";
 
   useEffect(() => {
     if (chatId) {
       markChatRead(chatId);
     }
   }, [chatId, markChatRead]);
+
+  useEffect(() => {
+    if (chatId && latestMessageId) {
+      markChatRead(chatId);
+    }
+  }, [chatId, latestMessageId, markChatRead]);
 
   useEffect(() => {
     if (!chatId || !userId) {
@@ -409,7 +438,12 @@ function ChatScreen() {
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} isOwn={message.senderId === userId} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.senderId === userId}
+                messageStatus={getMessageStatus(chat, userId, message)}
+              />
             ))}
           </AnimatePresence>
           {messages.length === 0 ? (

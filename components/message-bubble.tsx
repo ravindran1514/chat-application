@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Mic, Pencil, Trash2 } from "lucide-react";
+import { Check, CheckCheck, Mic, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useLongPress } from "@/hooks/use-long-press";
 import { formatTime } from "@/lib/utils";
@@ -11,9 +11,10 @@ import type { Message } from "@/types/chat";
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
+  messageStatus?: "sent" | "delivered" | "read";
 }
 
-export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, messageStatus = "sent" }: MessageBubbleProps) {
   const editMessage = useChatStore((state) => state.editMessage);
   const deleteMessage = useChatStore((state) => state.deleteMessage);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,6 +100,18 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
         <div className={isOwn ? "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-white/75" : "mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400"}>
           {message.edited ? <span>edited</span> : null}
           <time>{formatTime(message.updatedAt ?? message.createdAt)}</time>
+          {isOwn ? (
+            messageStatus === "sent" ? (
+              <Check size={14} strokeWidth={3} aria-label="Sent" />
+            ) : (
+              <CheckCheck
+                size={15}
+                strokeWidth={3}
+                aria-label={messageStatus === "read" ? "Read" : "Delivered"}
+                className={messageStatus === "read" ? "text-blue-300 drop-shadow-sm" : ""}
+              />
+            )
+          ) : null}
         </div>
       </div>
 

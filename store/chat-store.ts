@@ -261,10 +261,8 @@ function touchPresenceForState(state: ChatState, force = false): void {
   state.chats.forEach((chat) => {
     void updateDoc(doc(db, "chats", chat.id), {
       [`participantNames.${state.userId}`]: name,
-      [`participantPresence.${state.userId}`]: {
-        name,
-        lastSeenAt: now
-      }
+      [`participantPresence.${state.userId}.name`]: name,
+      [`participantPresence.${state.userId}.lastSeenAt`]: now
     }).catch(() => undefined);
   });
 }
@@ -390,7 +388,8 @@ export const useChatStore = create<ChatState>()(
           participantPresence: {
             [userId]: {
               name: get().profile.displayName,
-              lastSeenAt: now
+              lastSeenAt: now,
+              lastReadAt: now
             }
           },
           lastMessageText: "",
@@ -411,18 +410,18 @@ export const useChatStore = create<ChatState>()(
 
         const db = getFirebaseDb();
         const chatRef = doc(db, "chats", code);
+        const now = Date.now();
 
         try {
           await updateDoc(chatRef, {
             participantIds: arrayUnion(userId),
             [`participantNames.${userId}`]: get().profile.displayName,
-            updatedAt: Date.now()
+            updatedAt: now
           });
           await updateDoc(chatRef, {
-            [`participantPresence.${userId}`]: {
-              name: get().profile.displayName,
-              lastSeenAt: Date.now()
-            }
+            [`participantPresence.${userId}.name`]: get().profile.displayName,
+            [`participantPresence.${userId}.lastSeenAt`]: now,
+            [`participantPresence.${userId}.lastReadAt`]: now
           });
         } catch (error) {
           if (error instanceof Error && error.message.toLowerCase().includes("not-found")) {
@@ -483,10 +482,23 @@ export const useChatStore = create<ChatState>()(
         });
       },
       markChatRead: (chatId) => {
+        const state = get();
+        const now = Date.now();
+        const name = state.profile.displayName.trim() || "Me";
+
+        if (state.userId) {
+          void updateDoc(doc(getFirebaseDb(), "chats", chatId), {
+            [`participantNames.${state.userId}`]: name,
+            [`participantPresence.${state.userId}.name`]: name,
+            [`participantPresence.${state.userId}.lastSeenAt`]: now,
+            [`participantPresence.${state.userId}.lastReadAt`]: now
+          }).catch(() => undefined);
+        }
+
         set((state) => ({
           localReadAt: {
             ...state.localReadAt,
-            [chatId]: Date.now()
+            [chatId]: now
           },
           chats: state.chats.map((chat) => (chat.id === chatId ? { ...chat, unreadCount: 0 } : chat))
         }));
