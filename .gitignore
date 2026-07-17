@@ -6,6 +6,7 @@ node_modules/
 tsconfig.tsbuildinfo
 *.jks
 *.keystore
+google-services.json
 
 .agents/
 .codex/

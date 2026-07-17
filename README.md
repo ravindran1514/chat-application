@@ -21,6 +21,7 @@ A mobile-first realtime chat app built with Next.js 15, React, TypeScript, Tailw
 - Static export configured for Capacitor Android.
 - GitHub Actions cloud build for signed release APKs.
 - Release APK signing setup so future APKs can install as app updates.
+- Android push notifications for new chat messages through Firebase Cloud Messaging.
 
 ## How Two Phones Chat
 
@@ -91,6 +92,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 NEXT_PUBLIC_FIREBASE_APP_ID
+GOOGLE_SERVICES_JSON_BASE64
 ```
 
 Required Android signing repository secrets:
@@ -115,6 +117,30 @@ base64 -w 0 daily-brief-release.keystore
 ```
 
 Add the base64 output to `ANDROID_KEYSTORE_BASE64`. Keep `daily-brief-release.keystore` backed up safely. Future APK updates require the same signing key.
+
+To enable Android push notifications, download `google-services.json` from Firebase Console for package `com.offline.chat`, then add it to GitHub Actions secrets as base64:
+
+```bash
+base64 -w 0 google-services.json
+```
+
+Use that output for `GOOGLE_SERVICES_JSON_BASE64`.
+
+## Push Notification Function
+
+New message notifications are sent by the Firebase Function in `functions/index.js`.
+
+Install and deploy functions:
+
+```bash
+cd functions
+npm install
+cd ..
+firebase deploy --only functions
+firebase deploy --only firestore:rules
+```
+
+Cloud Functions for Firebase may require the Firebase project to be on the Blaze plan. The app registers each phone's FCM token under `users/{userId}/pushTokens`, and the function sends notifications to the other participants when a new chat message is created.
 
 ## Installing Updates
 

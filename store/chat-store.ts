@@ -7,6 +7,7 @@ import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth"
 import type { Unsubscribe } from "firebase/firestore";
 import { createIndexedDbStorage } from "@/lib/idb-storage";
 import { getFirebaseAuth, getFirebaseDb, hasFirebaseConfig } from "@/lib/firebase";
+import { registerPushNotifications } from "@/lib/push-notifications";
 import { createId, getInitials } from "@/lib/utils";
 import type { Chat, Message, Settings, ThemeMode, UserProfile } from "@/types/chat";
 
@@ -352,6 +353,7 @@ export const useChatStore = create<ChatState>()(
         authUnsubscribe = onAuthStateChanged(auth, (user: User | null) => {
           if (user) {
             set({ userId: user.uid, isOnlineReady: true, error: "" });
+            void registerPushNotifications(user.uid).catch(() => undefined);
             subscribeChatsForUser(user.uid, set, get);
             if (!presenceInterval) {
               presenceInterval = window.setInterval(() => touchPresenceForState(get(), true), 25000);

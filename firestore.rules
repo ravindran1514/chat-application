@@ -34,5 +34,10 @@ service cloud.firestore {
           && resource.data.senderId == request.auth.uid;
       }
     }
+
+    match /users/{userId}/pushTokens/{tokenId} {
+      allow read, write, delete: if signedIn()
+        && request.auth.uid == userId;
+    }
   }
 }
