@@ -1,5 +1,10 @@
 export type ThemeMode = "light" | "dark";
 
+export interface ParticipantPresence {
+  name: string;
+  lastSeenAt: number;
+}
+
 export interface Chat {
   id: string;
   roomCode: string;
@@ -10,6 +15,7 @@ export interface Chat {
   unreadCount: number;
   participantIds: string[];
   participantNames: Record<string, string>;
+  participantPresence: Record<string, ParticipantPresence>;
   lastMessageText: string;
   lastMessageAt: number;
   createdAt: number;

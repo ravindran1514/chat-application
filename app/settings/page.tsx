@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Check, Info, Moon, Sun, Trash2, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TopBar } from "@/components/top-bar";
@@ -23,6 +23,10 @@ export default function SettingsPage() {
   const clearAllData = useChatStore((state) => state.clearAllData);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [displayName, setDisplayName] = useState(profile.displayName);
+
+  useEffect(() => {
+    setDisplayName(profile.displayName);
+  }, [profile.displayName]);
 
   return (
     <AppShell>

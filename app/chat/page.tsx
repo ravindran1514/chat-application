@@ -1,7 +1,7 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
-import { Copy, ImagePlus, Mic, Pin, Send, Square, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Clock, Copy, ImagePlus, Mic, Pin, Send, Square, Trash2, Users, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -11,6 +11,171 @@ import { MessageBubble } from "@/components/message-bubble";
 import { TopBar } from "@/components/top-bar";
 import { copyToClipboard } from "@/lib/utils";
 import { getMessagesForChat, useChatStore } from "@/store/chat-store";
+import type { Chat } from "@/types/chat";
+
+const ONLINE_WINDOW_MS = 45000;
+
+function formatLastSeen(timestamp?: number): string {
+  if (!timestamp) {
+    return "Last seen unknown";
+  }
+
+  const diffMs = Date.now() - timestamp;
+  if (diffMs < ONLINE_WINDOW_MS) {
+    return "Online";
+  }
+
+  const minutes = Math.max(1, Math.round(diffMs / 60000));
+  if (minutes < 60) {
+    return `Last seen ${minutes} min ago`;
+  }
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `Last seen ${hours} hr ago`;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(timestamp);
+}
+
+function RoomMembersDialog({
+  chat,
+  currentUserId,
+  open,
+  onClose
+}: {
+  chat: Chat | undefined;
+  currentUserId: string | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const rawMembers =
+    chat?.participantIds.map((participantId) => {
+      const presence = chat.participantPresence[participantId];
+      const name = presence?.name || chat.participantNames[participantId] || "Unknown";
+      const online = presence?.lastSeenAt ? Date.now() - presence.lastSeenAt < ONLINE_WINDOW_MS : false;
+
+      return {
+        id: participantId,
+        name,
+        initials: name
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase() ?? "")
+          .join("") || "?",
+        online,
+        lastSeenAt: presence?.lastSeenAt ?? 0,
+        lastSeen: formatLastSeen(presence?.lastSeenAt)
+      };
+    }) ?? [];
+  const members = Array.from(
+    rawMembers
+      .sort((a, b) => {
+        if (a.id === currentUserId) {
+          return -1;
+        }
+        if (b.id === currentUserId) {
+          return 1;
+        }
+        if (a.online !== b.online) {
+          return a.online ? -1 : 1;
+        }
+        return b.lastSeenAt - a.lastSeenAt;
+      })
+      .reduce((memberMap, member) => {
+        const key = member.name.trim().toLowerCase() || member.id;
+        const existing = memberMap.get(key);
+
+        if (!existing || member.id === currentUserId || (!existing.online && member.online) || member.lastSeenAt > existing.lastSeenAt) {
+          memberMap.set(key, member);
+        }
+
+        return memberMap;
+      }, new Map<string, (typeof rawMembers)[number]>())
+      .values()
+  );
+  const onlineCount = members.filter((member) => member.online).length;
+
+  return (
+    <AnimatePresence>
+      {open && chat ? (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 px-4 pb-4 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          role="dialog"
+          aria-modal="true"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 26, scale: 0.98 }}
+            animate={{ y: 0, scale: 1 }}
+            exit={{ y: 26, scale: 0.98 }}
+            className="glass safe-bottom w-full max-w-md rounded-[1.7rem] p-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+                <Users size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-lg font-black">{chat.name}</h2>
+                <p className="truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {members.length} {members.length === 1 ? "member" : "members"} · {onlineCount} online
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close room members"
+                onClick={onClose}
+                className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-600 transition active:scale-95 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid gap-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 rounded-2xl bg-white/55 p-3 dark:bg-slate-950/35">
+                  <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-slate-950 text-sm font-black text-white dark:bg-white dark:text-slate-950">
+                    {member.initials}
+                    <span
+                      className={
+                        member.online
+                          ? "absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-950"
+                          : "absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-slate-400 dark:border-slate-950"
+                      }
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-black">{member.name}</p>
+                      {member.id === currentUserId ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+                          You
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className={member.online ? "mt-1 text-xs font-black text-emerald-600 dark:text-emerald-300" : "mt-1 flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400"}>
+                      {!member.online ? <Clock size={12} /> : null}
+                      {member.lastSeen}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
 
 function ChatScreen() {
   const router = useRouter();
@@ -35,6 +200,7 @@ function ChatScreen() {
   const [recordingStartedAt, setRecordingStartedAt] = useState(0);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -196,10 +362,14 @@ function ChatScreen() {
       <TopBar
         backHref="/chats"
         title={
-          <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMembersOpen(true)}
+            className="flex min-w-0 items-center gap-2 text-left transition active:scale-[0.99]"
+          >
             {chat ? <Avatar color={chat.color} initials={chat.avatarInitials} size="sm" /> : null}
             <span className="truncate">{chat?.name ?? "Loading"}</span>
-          </div>
+          </button>
         }
         subtitle={chat ? `Room ${chat.roomCode}` : "Connecting"}
         actions={
@@ -318,6 +488,7 @@ function ChatScreen() {
           }
         }}
       />
+      <RoomMembersDialog chat={chat} currentUserId={userId} open={membersOpen} onClose={() => setMembersOpen(false)} />
     </AppShell>
   );
 }

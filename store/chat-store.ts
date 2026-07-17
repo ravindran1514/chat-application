@@ -13,6 +13,7 @@ import type { Chat, Message, Settings, ThemeMode, UserProfile } from "@/types/ch
 const PROFILE_COLORS = ["#16a34a", "#0891b2", "#7c3aed", "#db2777", "#ea580c", "#2563eb"];
 const MAX_FIRESTORE_IMAGE_BYTES = 720 * 1024;
 const MAX_FIRESTORE_AUDIO_BYTES = 720 * 1024;
+const LOCAL_PROFILE_KEY = "daily-brief-profile";
 
 interface ChatState {
   chats: Chat[];
@@ -49,6 +50,55 @@ type PersistedChatState = Pick<ChatState, "settings" | "profile" | "localPinned"
 
 let authUnsubscribe: Unsubscribe | null = null;
 let chatsUnsubscribe: Unsubscribe | null = null;
+let presenceInterval: number | null = null;
+let lastPresenceWriteAt = 0;
+let presenceEventsBound = false;
+
+function readLocalProfile(): UserProfile {
+  if (typeof window === "undefined") {
+    return {
+      displayName: "Me",
+      color: PROFILE_COLORS[0]
+    };
+  }
+
+  try {
+    const storedProfile = window.localStorage.getItem(LOCAL_PROFILE_KEY);
+    if (!storedProfile) {
+      return {
+        displayName: "Me",
+        color: PROFILE_COLORS[0]
+      };
+    }
+
+    const parsedProfile = JSON.parse(storedProfile) as Partial<UserProfile>;
+    return {
+      displayName: parsedProfile.displayName?.trim() || "Me",
+      color: parsedProfile.color || PROFILE_COLORS[0]
+    };
+  } catch {
+    return {
+      displayName: "Me",
+      color: PROFILE_COLORS[0]
+    };
+  }
+}
+
+function writeLocalProfile(profile: UserProfile): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function clearLocalProfile(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(LOCAL_PROFILE_KEY);
+}
 
 function getRandomProfileColor(): string {
   return PROFILE_COLORS[Math.floor(Math.random() * PROFILE_COLORS.length)] ?? PROFILE_COLORS[0];
@@ -80,6 +130,10 @@ function mapChatDoc(id: string, data: Record<string, unknown>, localPinned: Reco
     unreadCount,
     participantIds: Array.isArray(data.participantIds) ? data.participantIds.map(String) : [],
     participantNames: typeof data.participantNames === "object" && data.participantNames ? (data.participantNames as Record<string, string>) : {},
+    participantPresence:
+      typeof data.participantPresence === "object" && data.participantPresence
+        ? (data.participantPresence as Chat["participantPresence"])
+        : {},
     lastMessageText: String(data.lastMessageText ?? ""),
     lastMessageAt,
     createdAt: Number(data.createdAt ?? Date.now()),
@@ -190,7 +244,53 @@ function requireOnline(state: ChatState): { userId: string } {
   return { userId: state.userId };
 }
 
-function subscribeChatsForUser(userId: string, set: (partial: Partial<ChatState> | ((state: ChatState) => Partial<ChatState>)) => void) {
+function touchPresenceForState(state: ChatState, force = false): void {
+  if (!state.userId || state.chats.length === 0) {
+    return;
+  }
+
+  const now = Date.now();
+  if (!force && now - lastPresenceWriteAt < 20000) {
+    return;
+  }
+
+  lastPresenceWriteAt = now;
+  const db = getFirebaseDb();
+  const name = state.profile.displayName.trim() || "Me";
+
+  state.chats.forEach((chat) => {
+    void updateDoc(doc(db, "chats", chat.id), {
+      [`participantNames.${state.userId}`]: name,
+      [`participantPresence.${state.userId}`]: {
+        name,
+        lastSeenAt: now
+      }
+    }).catch(() => undefined);
+  });
+}
+
+function bindPresenceEvents(get: () => ChatState): void {
+  if (presenceEventsBound || typeof window === "undefined") {
+    return;
+  }
+
+  presenceEventsBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      touchPresenceForState(get(), true);
+    } else {
+      touchPresenceForState(get(), true);
+    }
+  });
+  window.addEventListener("pagehide", () => touchPresenceForState(get(), true));
+  window.addEventListener("focus", () => touchPresenceForState(get(), true));
+}
+
+function subscribeChatsForUser(
+  userId: string,
+  set: (partial: Partial<ChatState> | ((state: ChatState) => Partial<ChatState>)) => void,
+  get: () => ChatState
+) {
   chatsUnsubscribe?.();
   const db = getFirebaseDb();
   const chatsQuery = query(collection(db, "chats"), where("participantIds", "array-contains", userId));
@@ -206,6 +306,7 @@ function subscribeChatsForUser(userId: string, set: (partial: Partial<ChatState>
           error: ""
         };
       });
+      touchPresenceForState(get());
     },
     (error) => {
       set({
@@ -224,10 +325,7 @@ export const useChatStore = create<ChatState>()(
       settings: {
         theme: "light"
       },
-      profile: {
-        displayName: "Me",
-        color: PROFILE_COLORS[0]
-      },
+      profile: readLocalProfile(),
       userId: null,
       isOnlineReady: false,
       isLoading: true,
@@ -250,12 +348,16 @@ export const useChatStore = create<ChatState>()(
           return;
         }
 
+        bindPresenceEvents(get);
         set({ isLoading: true });
         const auth = getFirebaseAuth();
         authUnsubscribe = onAuthStateChanged(auth, (user: User | null) => {
           if (user) {
             set({ userId: user.uid, isOnlineReady: true, error: "" });
-            subscribeChatsForUser(user.uid, set);
+            subscribeChatsForUser(user.uid, set, get);
+            if (!presenceInterval) {
+              presenceInterval = window.setInterval(() => touchPresenceForState(get(), true), 25000);
+            }
             return;
           }
 
@@ -285,6 +387,12 @@ export const useChatStore = create<ChatState>()(
           participantNames: {
             [userId]: get().profile.displayName
           },
+          participantPresence: {
+            [userId]: {
+              name: get().profile.displayName,
+              lastSeenAt: now
+            }
+          },
           lastMessageText: "",
           lastMessageAt: now,
           lastSenderId: "",
@@ -309,6 +417,12 @@ export const useChatStore = create<ChatState>()(
             participantIds: arrayUnion(userId),
             [`participantNames.${userId}`]: get().profile.displayName,
             updatedAt: Date.now()
+          });
+          await updateDoc(chatRef, {
+            [`participantPresence.${userId}`]: {
+              name: get().profile.displayName,
+              lastSeenAt: Date.now()
+            }
           });
         } catch (error) {
           if (error instanceof Error && error.message.toLowerCase().includes("not-found")) {
@@ -346,6 +460,7 @@ export const useChatStore = create<ChatState>()(
         await updateDoc(chatRef, {
           participantIds: arrayRemove(userId),
           [`participantNames.${userId}`]: deleteField(),
+          [`participantPresence.${userId}`]: deleteField(),
           updatedAt: Date.now()
         });
 
@@ -530,14 +645,21 @@ export const useChatStore = create<ChatState>()(
         }));
       },
       setProfile: (profile) => {
+        writeLocalProfile(profile);
         set({ profile });
+        touchPresenceForState(get(), true);
       },
       clearAllData: () => {
+        clearLocalProfile();
         set({
           chats: [],
           messages: [],
           localPinned: {},
           localReadAt: {},
+          profile: {
+            displayName: "Me",
+            color: PROFILE_COLORS[0]
+          },
           settings: {
             theme: "light"
           }
