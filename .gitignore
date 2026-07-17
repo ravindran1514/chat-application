@@ -4,6 +4,8 @@
 out/
 node_modules/
 tsconfig.tsbuildinfo
+*.jks
+*.keystore
 
 .agents/
 .codex/
